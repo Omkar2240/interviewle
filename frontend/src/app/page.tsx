@@ -4,12 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "../../lib/socket";
 import { createPeerConnection } from "../../lib/webrtc";
 
+interface MatchedEvent {
+  roomId: string;
+  initiator: boolean;
+}
+
+interface SignalData {
+  type: "offer" | "answer" | "ice";
+  offer?: RTCSessionDescriptionInit;
+  answer?: RTCSessionDescriptionInit;
+  candidate?: RTCIceCandidateInit;
+}
+
 export default function Home() {
 
   const localVideo = useRef<HTMLVideoElement>(null);
   const remoteVideo = useRef<HTMLVideoElement>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const roomIdRef = useRef("");
 
   const [roomId, setRoomId] = useState("");
 
@@ -49,7 +62,7 @@ export default function Home() {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("signal", {
-          roomId,
+          roomId: roomIdRef.current,
           data: {
             type: "ice",
             candidate: event.candidate
@@ -65,9 +78,10 @@ export default function Home() {
     socket.emit("join-queue");
   }
 
-  async function handleMatched({ roomId, initiator }: any) {
+  async function handleMatched({ roomId, initiator }: MatchedEvent) {
 
     setRoomId(roomId);
+    roomIdRef.current = roomId;
 
     const pc = pcRef.current;
 
@@ -90,13 +104,13 @@ export default function Home() {
     }
   }
 
-  async function handleSignal(data: any) {
+  async function handleSignal(data: SignalData) {
 
     const pc = pcRef.current;
 
     if (!pc) return;
 
-    if (data.type === "offer") {
+    if (data.type === "offer" && data.offer) {
 
       await pc.setRemoteDescription(data.offer);
 
@@ -105,7 +119,7 @@ export default function Home() {
       await pc.setLocalDescription(answer);
 
       socket.emit("signal", {
-        roomId,
+        roomId: roomIdRef.current,
         data: {
           type: "answer",
           answer
@@ -114,11 +128,11 @@ export default function Home() {
 
     }
 
-    if (data.type === "answer") {
+    if (data.type === "answer" && data.answer) {
       await pc.setRemoteDescription(data.answer);
     }
 
-    if (data.type === "ice") {
+    if (data.type === "ice" && data.candidate) {
       await pc.addIceCandidate(data.candidate);
     }
   }
