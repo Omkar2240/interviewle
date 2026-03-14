@@ -2,15 +2,15 @@ import { v4 as uuidv4 } from "uuid";
 
 let waitingUsers = [];
 
-function addUser(socket) {
+export function addUser(socket) {
   waitingUsers.push(socket);
 }
 
-function removeUser(socketId) {
+export function removeUser(socketId) {
   waitingUsers = waitingUsers.filter(user => user.id !== socketId);
 }
 
-function matchUsers(io) {
+export function matchUsers(io) {
   if (waitingUsers.length >= 2) {
 
     const user1 = waitingUsers.shift();
@@ -34,9 +34,3 @@ function matchUsers(io) {
     console.log("Matched:", user1.id, user2.id);
   }
 }
-
-export default {
-  addUser,
-  removeUser,
-  matchUsers
-};

@@ -1,4 +1,4 @@
-import { addUser, removeUser, matchUsers } from "./matchmaking";
+import { addUser, removeUser, matchUsers } from "./matchmaking.js";
 
 export default function(io) {
 
